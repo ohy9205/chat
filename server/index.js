@@ -11,23 +11,42 @@ http.listen(port, () => console.log("server listening on ", port));
 const socketIO = require("socket.io")(http, { cors: { origin: "http://localhost:3000" } });
 
 socketIO.on("connection", (socket) => {
-  // console.log(`##############${socket.id} 연결됨###########`);
+  console.log(`##############${socket.id} 연결됨###########`);
+
+  let sendData;
+  let dataObj;
+
   // *유저입장 수신
   socket.on("LOG_IN", (data) => {
-    socketIO.emit("LOGGED_IN", { message: `[공지] ${data.userName} 입장` });
+    const { userName } = JSON.parse(data);
+    sendData = { userName, message: `[공지] ${userName} 입장`, type: "notice" };
+    dataObj = JSON.stringify(sendData);
+    socketIO.emit("LOGGED_IN", dataObj);
   });
 
   // *채팅수신
   socket.on("SEND_MSG", (data) => {
-    socketIO.emit("RESPONSE_MSG", data);
+    const { userName } = JSON.parse(data);
+    const { message } = JSON.parse(data);
+    sendData = { userName, message: message };
+    dataObj = JSON.stringify(sendData);
+
+    socketIO.emit("RESPONSE_MSG", dataObj);
   });
 
   // *종료수신
   socket.on("LOG_OUT", (data) => {
-    socketIO.emit("LOGED_OUT", { message: `[공지] ${data.userName} 채팅방 나감` });
+    const { userName } = JSON.parse(data);
+    console.log(data);
+
+    sendData = { userName, message: `[공지] ${userName} 채팅 종료`, type: "notice" };
+    dataObj = JSON.stringify(sendData);
+
+    socketIO.emit("LOGGED_OUT", dataObj);
     socket.on("disconnect", (reason) => console.log(reason));
   });
 
+  // *연결종료, 이유출력
   socket.on("disconnect", (reason) => {
     console.log(`${socket.id} disconnected : ${reason}`);
   });

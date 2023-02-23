@@ -1,4 +1,5 @@
-const express = require("express");
+import express from "express";
+import SOCKET_EVENT from "../common/socket.js";
 const app = express();
 const port = process.env.PORT || 4000;
 const http = require("http").Server(app);
@@ -17,32 +18,32 @@ socketIO.on("connection", (socket) => {
   let dataObj;
 
   // *유저입장 수신
-  socket.on("LOG_IN", (data) => {
-    const { userName } = JSON.parse(data);
-    sendData = { userName, message: `[공지] ${userName} 입장`, type: "notice" };
+  socket.on(SOCKET_EVENT.JOIN_ROOM, (message) => {
+    const { userName, room } = JSON.parse(message);
+
+    sendData = { userName, text: `[공지] ${userName} 입장`, type: "notice" };
     dataObj = JSON.stringify(sendData);
-    socketIO.emit("LOGGED_IN", dataObj);
+    socketIO.emit(SOCKET_EVENT.JOINED_ROOM, dataObj);
   });
 
   // *채팅수신
-  socket.on("SEND_MSG", (data) => {
-    const { userName } = JSON.parse(data);
-    const { message } = JSON.parse(data);
-    sendData = { userName, message: message };
+  socket.on(SOCKET_EVENT.SEND_MESSAGE, (message) => {
+    const { userName, text, room } = JSON.parse(message);
+    sendData = { userName, text };
     dataObj = JSON.stringify(sendData);
 
-    socketIO.emit("RESPONSE_MSG", dataObj);
+    socketIO.emit(SOCKET_EVENT.RESPONSE_MESSAGE, dataObj);
   });
 
   // *종료수신
-  socket.on("LOG_OUT", (data) => {
-    const { userName } = JSON.parse(data);
+  socket.on(SOCKET_EVENT.LOG_OUT, (message) => {
+    const { userName } = JSON.parse(message);
 
-    sendData = { userName, message: `[공지] ${userName} 채팅 종료`, type: "notice" };
+    sendData = { userName, text: `[공지] ${userName} 채팅 종료`, type: "notice" };
     dataObj = JSON.stringify(sendData);
 
-    socketIO.emit("LOGGED_OUT", dataObj);
-    // socket.on("disconnect", (reason) => console.log(`${socket.id} disconnected : ${reason}`));
+    socketIO.emit(SOCKET_EVENT.LOGGED_OUT, dataObj);
+    socket.on("disconnect", (reason) => console.log(`${socket.id} LOGGED_OUT disconnected : ${reason}`));
   });
 
   // *연결종료, 이유출력

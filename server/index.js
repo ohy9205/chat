@@ -37,13 +37,12 @@ socketIO.on("connection", (socket) => {
   // *종료수신
   socket.on("LOG_OUT", (data) => {
     const { userName } = JSON.parse(data);
-    console.log(data);
 
     sendData = { userName, message: `[공지] ${userName} 채팅 종료`, type: "notice" };
     dataObj = JSON.stringify(sendData);
 
     socketIO.emit("LOGGED_OUT", dataObj);
-    socket.on("disconnect", (reason) => console.log(reason));
+    // socket.on("disconnect", (reason) => console.log(`${socket.id} disconnected : ${reason}`));
   });
 
   // *연결종료, 이유출력

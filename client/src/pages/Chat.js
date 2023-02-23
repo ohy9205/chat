@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import socketIo from "socket.io-client";
 import { useLocation, useNavigate } from "react-router-dom";
 
+let socket;
+let sendData; // 전송 데이터를 JSON으로 변환(stringify)
+let dataObj; // 전송 데이터
+
 export default function Chat() {
   const { state: userName } = useLocation();
   const [chats, setChats] = useState([]);
   const [message, setMessage] = useState("");
-  const socket = socketIo.connect("http://localhost:4000");
   const navigate = useNavigate();
 
   // let dataObj; // 전송 데이터
@@ -16,16 +19,15 @@ export default function Chat() {
   const sendMessage = () => {
     if (message.trim().length <= 0) return;
 
-    const sendObj = { userName, message };
-    const dataObj = JSON.stringify(sendObj);
-    socket.emit("SEND_MSG", dataObj);
-
-    setMessage("");
+    sendData = { userName, message };
+    dataObj = JSON.stringify(sendData);
+    socket.emit("SEND_MSG", dataObj, () => setMessage(""));
+    // socket.emit("SEND_MSG", dataObj);
   };
 
   const closeChat = () => {
-    const sendObj = { userName };
-    const dataObj = JSON.stringify(sendObj);
+    sendData = { userName };
+    dataObj = JSON.stringify(sendData);
 
     socket.emit("LOG_OUT", dataObj);
     navigate(-1);
@@ -33,15 +35,17 @@ export default function Chat() {
 
   // 페이지 이동하면 로그아웃
   window.onbeforeunload = (e) => {
-    const sendObj = { userName };
-    const dataObj = JSON.stringify(sendObj);
-    socket.emit("LOG_OUT", dataObj);
+    sendData = { userName };
+    dataObj = JSON.stringify(sendData);
+    // socket.emit("LOG_OUT", dataObj);
   };
 
   // 처음 렌더링 되면 사용자 접속을 알림
   useEffect(() => {
-    const sendData = { userName };
-    const dataObj = JSON.stringify(sendData);
+    socket = socketIo.connect("http://localhost:4000");
+
+    sendData = { userName };
+    dataObj = JSON.stringify(sendData);
     socket.emit("LOG_IN", dataObj);
 
     socket.on("LOGGED_IN", (message) => {
@@ -61,7 +65,7 @@ export default function Chat() {
       setChats((chats) => [...chats, receiveData]);
     });
     // socket.on("LOGED_OUT", (data) => setChats([...chats, data]));
-  }, []);
+  }, [userName]);
 
   return (
     <div>
@@ -87,7 +91,6 @@ export default function Chat() {
             );
           })}
       </section>
-      {/* <section>{chats && chats.map((chat) => <p>{chat.userName}</p>)}</section> */}
     </div>
   );
 }

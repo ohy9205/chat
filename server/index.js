@@ -18,7 +18,7 @@ socketIO.on("connection", (socket) => {
 
   console.log(`##############${socket.id} 연결됨###########`);
 
-  // *유저입장 수신
+  // *유저입장
   socket.on("JOIN_ROOM", (message, callback) => {
     const { userName, room } = JSON.parse(message);
 
@@ -36,17 +36,7 @@ socketIO.on("connection", (socket) => {
     socketIO.to(room).emit("JOINED_ROOM", dataObj);
   });
 
-  // *유저입장 수신
-  socket.on("LOG_IN", (message) => {
-    const { userName, room } = JSON.parse(message);
-    socket.join(room);
-
-    sendData = { userName, text: `[공지] ${userName} 입장`, type: "notice" };
-    dataObj = JSON.stringify(sendData);
-    socketIO.to(room).emit("JOINED_ROOM", dataObj);
-  });
-
-  // *채팅수신
+  // *채팅
   socket.on("SEND_MESSAGE", (message) => {
     const { userName, text, room } = JSON.parse(message);
     sendData = { userName, text };
@@ -57,17 +47,19 @@ socketIO.on("connection", (socket) => {
 
   // *채팅종료
   // socket.on("LOG_OUT", (message) => {
-  //   const userIdx = users.findIndex((user) => user.id === socket.id); // socket id로 user검색
-  //   const user = userIdx !== -1 && users.splice(userIdx, 1); //splice: 원본수정, return Array
-  //   // user: 삭제한애
+  socket.on("LEAVE_ROOM", (message) => {
+    const userIdx = users.findIndex((user) => user.id === socket.id); // socket id로 user검색
+    const user = userIdx !== -1 && users.splice(userIdx, 1); //splice: 원본수정, return Array
 
-  //   if (user) {
-  //     sendData = { text: `[공지] ${user[0].userName} 채팅 종료`, type: "notice" };
-  //     dataObj = JSON.stringify(sendData);
+    if (user) {
+      sendData = { text: `[공지] ${user[0].userName} 채팅 종료`, type: "notice" };
+      dataObj = JSON.stringify(sendData);
 
-  //     socketIO.to(user[0].room).emit("LOGGED_OUT", dataObj);
-  //   }
-  // });
+      // socketIO.to(user[0].room).emit("LOGGED_OUT", dataObj);
+      socketIO.to(user[0].room).emit("LEAVED_ROOM", dataObj);
+    }
+    console.log(`################### ${socket.id} disconnected ###################`);
+  });
 
   // *연결종료, 이유출력
   socket.on("disconnect", (reason) => {

@@ -1,0 +1,44 @@
+ul,
+li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.Message {
+  display: flex;
+  flex-direction: column;
+}
+
+.textBox {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.text {
+  background-color: #ccc;
+  padding: 0.5rem;
+}
+
+.userName {
+  font-size: 0.8rem;
+}
+
+/* 남이보낸거면 userName - text */
+/* 내가보낸거면 text - userName */
+.mine {
+  flex-direction: row-reverse;
+}
+
+.mine > .text {
+  /* background-color: rgb(223, 246, 255); */
+  background-color: #00b5ad;
+  color: #fff;
+  font-weight: 100;
+  border-radius: 0.3rem;
+}
+
+.notice {
+  text-align: center;
+}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "semantic-ui-react";
+import style from "./Home.module.css";
 
 export default function Home() {
   const [userName, setUserName] = useState("");
@@ -16,34 +17,17 @@ export default function Home() {
       return;
     }
 
-    navigate(`/chat/${roomName}`, { state: userName });
+    navigate(`/chat/${roomName}`, { state: userName, replace: true });
   };
 
   return (
-    <div>
-      <h1>Home</h1>
-      <form className="" onSubmit={handleSubmit}>
-        <Input
-          className="ui input"
-          type="text"
-          minLength={1}
-          name="username"
-          id="username"
-          value={userName}
-          placeholder="닉네임"
-          onChange={(e) => setUserName(e.target.value)}
-        />
-        <Input
-          className="ui input"
-          type="text"
-          minLength={1}
-          name="room"
-          id="room"
-          value={roomName}
-          placeholder="방이름"
-          onChange={(e) => setRoomName(e.target.value)}
-        />
-        <button className="ui button" type="submit">
+    // <div className={style.Home}>
+    <div className={`${style.Home} ui floating message`}>
+      <h1 className={style.title}>JOIN</h1>
+      <form className={style.form} onSubmit={handleSubmit}>
+        <Input type="text" minLength={1} name="username" id="username" value={userName} placeholder="닉네임" onChange={(e) => setUserName(e.target.value)} />
+        <Input type="text" minLength={1} name="room" id="room" value={roomName} placeholder="방이름" onChange={(e) => setRoomName(e.target.value)} />
+        <button className={`ui button teal ${style.formBtn}`} type="submit">
           입장
         </button>
         {error && <p>{error}</p>}

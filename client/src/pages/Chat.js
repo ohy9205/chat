@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import socketIo from "socket.io-client";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Message from "../components/Message";
+import style from "./Chat.module.css";
 
 let socket;
 let sendData; // 전송 데이터
@@ -13,8 +14,10 @@ export default function Chat() {
   const [text, setText] = useState("");
   const { room } = useParams();
   const navigate = useNavigate();
+  const messageBoxRef = useRef();
 
-  const sendMessage = () => {
+  const sendMessageHandler = (e) => {
+    e.preventDefault();
     if (text.trim().length <= 0) return;
 
     sendData = { userName, text, room };
@@ -22,20 +25,13 @@ export default function Chat() {
     socket.emit("SEND_MESSAGE", dataObj, setText(""));
   };
 
-  const closeChat = () => {
+  // 페이지 이동하면 로그아웃
+  const leaveChatHandler = (e) => {
     sendData = { userName, room };
     dataObj = JSON.stringify(sendData);
-
-    socket.emit("LOG_OUT", dataObj);
-    navigate(-1);
+    socket.emit("LEAVE_ROOM", dataObj);
+    navigate("/", { replace: true });
   };
-
-  // 페이지 이동하면 로그아웃
-  // window.onbeforeunload = (e) => {
-  //   sendData = { userName, room };
-  //   dataObj = JSON.stringify(sendData);
-  //   socket.emit("LOG_OUT", dataObj);
-  // };
 
   useEffect(() => {
     socket = socketIo.connect("http://localhost:4000");
@@ -44,15 +40,10 @@ export default function Chat() {
     dataObj = JSON.stringify(sendData);
     socket.emit("JOIN_ROOM", dataObj, (error) => {
       alert(error.error);
-      navigate(-1);
+      navigate("/", { replace: true });
     }); // 처음 렌더링 되면 사용자 접속을 알림
 
     socket.on("JOINED_ROOM", (message) => {
-      const receiveData = JSON.parse(message);
-      setChats((chats) => [...chats, receiveData]);
-    });
-
-    socket.on("LOG_IN", (message) => {
       const receiveData = JSON.parse(message);
       setChats((chats) => [...chats, receiveData]);
     });
@@ -62,20 +53,35 @@ export default function Chat() {
       setChats((chats) => [...chats, receiveData]);
     });
 
-    // socket.on("LOGGED_OUT", (message) => {
-    //   const receiveData = JSON.parse(message);
-    //   setChats((chats) => [...chats, receiveData]);
-    // });
+    socket.on("LEAVED_ROOM", (message) => {
+      const receiveData = JSON.parse(message);
+      setChats((chats) => [...chats, receiveData]);
+    });
   }, [room, userName, navigate]);
 
-  return (
-    <div>
-      <h1>Room {room}</h1>
-      <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
-      <button onClick={sendMessage}>전송</button>
-      <button onClick={closeChat}>종료</button>
+  // chats이 갱신되면 스크롤을 맨 밑으로
+  useEffect(() => {
+    // window.addEventListener('scorll', )
+  }, [chats]);
 
-      <ul>{chats && chats.map((chat, idx) => <Message key={idx} chat={chat} />)}</ul>
+  return (
+    <div className={`${style.Chat} ui floating message`}>
+      <h1 className={style.title}>
+        <i class={`angle left icon teal ${style.leaveBtn}`}></i>
+
+        {room}
+      </h1>
+
+      <ul className={style.messageBox} ref={messageBoxRef}>
+        {chats && chats.map((chat, idx) => <Message key={idx} chat={chat} userName={userName} />)}
+      </ul>
+
+      <form className={`ui action input ${style.sendBox}`}>
+        <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
+        <button className={`ui button ${text && "teal"}`} onClick={sendMessageHandler}>
+          전송
+        </button>
+      </form>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import Message from "../components/Message";
 let socket;
 let sendData; // 전송 데이터
 let dataObj; // 전송 데이터를 JSON타입으로 변환
-let useName;
 
 export default function Chat() {
   const { state: userName } = useLocation();
@@ -14,7 +13,6 @@ export default function Chat() {
   const [text, setText] = useState("");
   const { room } = useParams();
   const navigate = useNavigate();
-  useName = userName;
 
   const sendMessage = () => {
     if (text.trim().length <= 0) return;
@@ -33,32 +31,26 @@ export default function Chat() {
   };
 
   // 페이지 이동하면 로그아웃
-  window.onbeforeunload = (e) => {
-    sendData = { userName, room };
-    dataObj = JSON.stringify(sendData);
-    socket.emit("LOG_OUT", dataObj);
-  };
+  // window.onbeforeunload = (e) => {
+  //   sendData = { userName, room };
+  //   dataObj = JSON.stringify(sendData);
+  //   socket.emit("LOG_OUT", dataObj);
+  // };
+
   useEffect(() => {
-    sendData = { userName, room };
-    dataObj = JSON.stringify(sendData);
     socket = socketIo.connect("http://localhost:4000");
-    // socket = socketIo.connect("http://localhost:4000", dataObj);
 
     sendData = { userName, room };
     dataObj = JSON.stringify(sendData);
-    socket.emit("JOIN_ROOM", dataObj); // 처음 렌더링 되면 사용자 접속을 알림
+    socket.emit("JOIN_ROOM", dataObj, (error) => {
+      alert(error.error);
+      navigate(-1);
+    }); // 처음 렌더링 되면 사용자 접속을 알림
 
     socket.on("JOINED_ROOM", (message) => {
-      const { roomData } = JSON.parse(message);
-      // const userExist = roomData.users.findIndex((user) => user === userName);
-      const userExist = roomData.users.findIndex((user) => user === useName);
-      useName = userExist !== -1 ? userName : `${useName}(TESTNAME)`;
+      const receiveData = JSON.parse(message);
+      setChats((chats) => [...chats, receiveData]);
     });
-
-    // socket.on("JOINED_ROOM", (message) => {
-    //   const receiveData = JSON.parse(message);
-    //   setChats((chats) => [...chats, receiveData]);
-    // });
 
     socket.on("LOG_IN", (message) => {
       const receiveData = JSON.parse(message);
@@ -70,11 +62,11 @@ export default function Chat() {
       setChats((chats) => [...chats, receiveData]);
     });
 
-    socket.on("LOGGED_OUT", (message) => {
-      const receiveData = JSON.parse(message);
-      setChats((chats) => [...chats, receiveData]);
-    });
-  }, [userName, room]);
+    // socket.on("LOGGED_OUT", (message) => {
+    //   const receiveData = JSON.parse(message);
+    //   setChats((chats) => [...chats, receiveData]);
+    // });
+  }, [room, userName, navigate]);
 
   return (
     <div>

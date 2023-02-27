@@ -10,22 +10,26 @@ http.listen(port, () => console.log("server listening on ", port));
 // *connection: socket.io 기본 이벤트, 사용자가 웹 사이트 접속하면 자동 실행됨
 const socketIO = require("socket.io")(http, { cors: { origin: "http://localhost:3000" } });
 
-let rooms = [];
-
-// 넘어왔을 때 방이름, 아이디 찾고 없으면
+let users = []; // user정보: userName, room, sockeId
 
 socketIO.on("connection", (socket) => {
   let sendData;
   let dataObj;
-  let count = 1;
 
   console.log(`##############${socket.id} 연결됨###########`);
 
   // *유저입장 수신
-  socket.on("JOIN_ROOM", (message) => {
+  socket.on("JOIN_ROOM", (message, callback) => {
     const { userName, room } = JSON.parse(message);
 
-    sendData = {};
+    const userExist = users.find((user) => user.room === room && user.userName === userName);
+    if (userExist) {
+      callback({ error: `${userName}은 이미 사용중인 이름입니다.` });
+      return;
+    }
+
+    users.push({ id: socket.id, userName, room });
+    socket.join(room);
 
     sendData = { userName, text: `[공지] ${userName} 입장`, type: "notice" };
     dataObj = JSON.stringify(sendData);
@@ -36,8 +40,6 @@ socketIO.on("connection", (socket) => {
   socket.on("LOG_IN", (message) => {
     const { userName, room } = JSON.parse(message);
     socket.join(room);
-
-    // 방 이름 찾아서 rooms 데이터 추가
 
     sendData = { userName, text: `[공지] ${userName} 입장`, type: "notice" };
     dataObj = JSON.stringify(sendData);
@@ -53,24 +55,33 @@ socketIO.on("connection", (socket) => {
     socketIO.to(room).emit("RESPONSE_MESSAGE", dataObj);
   });
 
-  // *종료수신
-  socket.on("LOG_OUT", (message) => {
-    const { userName, room } = JSON.parse(message);
-    sendData = { userName, text: `[공지] ${userName} 채팅 종료`, type: "notice" };
-    dataObj = JSON.stringify(sendData);
+  // *채팅종료
+  // socket.on("LOG_OUT", (message) => {
+  //   const userIdx = users.findIndex((user) => user.id === socket.id); // socket id로 user검색
+  //   const user = userIdx !== -1 && users.splice(userIdx, 1); //splice: 원본수정, return Array
+  //   // user: 삭제한애
 
-    socketIO.to(room).emit("LOGGED_OUT", dataObj);
-    socket.on("disconnect", (reason) => console.log(`${socket.id} LOGGED_OUT disconnected : ${reason}`));
-  });
+  //   if (user) {
+  //     sendData = { text: `[공지] ${user[0].userName} 채팅 종료`, type: "notice" };
+  //     dataObj = JSON.stringify(sendData);
+
+  //     socketIO.to(user[0].room).emit("LOGGED_OUT", dataObj);
+  //   }
+  // });
 
   // *연결종료, 이유출력
   socket.on("disconnect", (reason) => {
+    const userIdx = users.findIndex((user) => user.id === socket.id);
+    const user = userIdx !== -1 && users.splice(userIdx, 1); //splice: 원본수정, return Array
+    // user: 삭제한애
+
+    if (user) {
+      sendData = { text: `[공지] ${user[0].userName} 채팅 종료`, type: "notice" };
+      dataObj = JSON.stringify(sendData);
+
+      socketIO.to(user[0].room).emit("LOGGED_OUT", dataObj);
+    }
+
     console.log(`${socket.id} disconnected : ${reason}`);
   });
 });
-
-/**
- * ! JOIN_ROOM 시 닉네임 검사하면 RESPONSE_MESSAGe, LOG_OUT 때마다 검사해야함
- * ! => connection되면 rooms 데이터를 클라이언트에 전달, 클라이언트에서는 중복 여부를 판단하고 userName값 변경(ex. tester1(1) )
- * ! => JOIN_ROOM에서는 데이터 중복검사하고, 바로 LOG_IN 이벤트 ㄱ
- */

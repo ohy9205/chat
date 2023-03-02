@@ -1,0 +1,43 @@
+.Chat {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+
+  padding: 1rem 0;
+}
+
+.leaveBtn {
+  cursor: pointer;
+  font-size: 2rem;
+}
+
+.content {
+  flex-grow: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.messageBox {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  overflow-y: scroll;
+
+  background-color: #fff;
+  padding: 1rem;
+}
+
+.sendBox {
+  width: 100%;
+}

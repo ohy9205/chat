@@ -41,3 +41,8 @@
 .sendBox {
   width: 100%;
 }
+
+.sendBox textarea {
+  flex-grow: 1;
+  resize: none;
+}

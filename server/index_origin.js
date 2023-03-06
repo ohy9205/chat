@@ -6,26 +6,24 @@ const http = require("http").Server(app);
 
 http.listen(port, () => console.log("server listening on ", port));
 
-// !해시로 유저 관리
-// Map 사용 가능
-let users = new Map(); // user정보: userName, room, sockeId
+// user정보: userName, room, sockeId
+let users = [];
 
 // 전송 데이터 정보
 let sendData;
 
 // 소켓 종료
-const closeSocketHandler = (userId) => {
-  const deleteUser = users.get(userId);
+const closeSocketHandler = (socketId) => {
+  const userIdx = users.findIndex((user) => user.userId === socketId);
+  const user = userIdx !== -1 && users.splice(userIdx, 1);
 
-  users.delete(userId);
-
-  if (users.length > 0) {
+  if (user) {
     sendData = {
-      text: `[공지] ${deleteUser.userName} 채팅 종료`,
+      text: `[공지] ${user[0].userName} 채팅 종료`,
       type: "notice",
     };
 
-    socketIO.to(deleteUser.name).emit("LEAVED_ROOM", sendData);
+    socketIO.to(user[0].room).emit("LEAVED_ROOM", sendData);
   }
 };
 
@@ -36,8 +34,6 @@ const socketIO = require("socket.io")(http, {
 
 socketIO.on("connection", (socket) => {
   console.log(`##############${socket.id} 연결###########`);
-
-  let userId = socket.id;
 
   // *유저입장
   socket.on("JOIN_ROOM", ({ userName, room }, callback) => {
@@ -52,7 +48,7 @@ socketIO.on("connection", (socket) => {
       return;
     }
 
-    users.set(userId, { userName, room }); // 정상 입장하면 유저 정보 저장
+    users.push({ userId: socket.id, userName, room }); // 정상 입장하면 유저 정보 저장
     socket.join(room); // 해당 소켓을 현 채팅방에 join
 
     sendData = { userName, text: `[공지] ${userName} 입장`, type: "notice" };
@@ -67,7 +63,7 @@ socketIO.on("connection", (socket) => {
 
   // *연결종료, 이유출력
   socket.on("disconnect", (reason) => {
-    closeSocketHandler(userId);
+    closeSocketHandler(socket.id);
     console.log(`##############${socket.id} 종료###########`);
   });
 });
